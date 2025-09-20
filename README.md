@@ -1,12 +1,24 @@
 # VA Disability Compensation Rates (Normalized)
 
-Sample, versioned datasets of VA disability compensation rates by year.
+This repository provides **normalized datasets** of U.S. Department of Veterans Affairs (VA) disability compensation rates, along with the **scraping and normalization scripts** used to generate them.
 
-- **Coverage:** 2020–2025
-- **Grain:** One row per (Year, Rating, Category, Dependent_Status / Added_Item)
-- **Source:** https://www.va.gov/disability/compensation-rates/veteran-rates/
+- **Coverage:** 2020 – 2025 (effective December 1 of the prior year)
+- **Format:** CSV (UTF-8, RFC 4180 compliant) with one row per (Year, Rating, Category, Dependent_Status / Added_Item)
+- **Extras:** Python scripts for scraping, normalization, and validation
+- **Source:** [VA Disability Compensation Rates](https://www.va.gov/disability/compensation-rates/veteran-rates/)
 
-## Repo Layout
+> ⚠️ This project is **not affiliated with the VA**. It republishes publicly available information in a developer-friendly format.
+
+## Why this repo?
+
+The VA publishes rates in multiple HTML tables, which can be cumbersome to work with programmatically.  
+This repo normalizes those tables into a consistent schema across years, so you can:
+
+- Import into Google Sheets, Excel, or BI tools
+- Load into Python/R data pipelines
+- Compare rates across years with a single dataset
+
+## Repo Structure
 ```
 va-disability-rates/
 ├─ data/
@@ -35,15 +47,43 @@ va-disability-rates/
 └─ README.md
 ```
 
-## README Essentials
-- **What & why** (1–2 sentences).
-- **Source & provenance** (original URLs, effective dates, any manual steps).
-- **Schema** (columns, types, allowed values, units, null policy).
-- **Versioning** (semantic versioning; how you bump versions when schema/values change).
-- **How to use** (quick examples in Python/R/Sheets).
-- **License** (data: CC0 or CC-BY 4.0; code: MIT/Apache-2.0).
-- **Cite this** (how you want credit + link to DOI if you mint one).
-- **Limitations** (known gaps, rounding, update cadence).
+## Schema
+
+| Column            | Type    | Description |
+|-------------------|---------|-------------|
+| `Year`            | int     | Effective year of the rate table |
+| `Rating`          | int     | Disability rating (10–100) |
+| `Category`        | string  | "Basic" or "Added" |
+| `Dependent_Group` | string  | "No children", "With children", or `null` for added items |
+| `Dependent_Status`| string  | Dependency description (varies by group) |
+| `Has_Spouse`      | boolean | Boolean flag to indicate if the rate incldues a dependent spouse |
+| `Parent_Count`    | int     | Number of dependent parents in the rate (0, 1, or 2) |
+| `Child_Count`     | int     | Number of dependent children in the rate (0 or 1) |
+| `Added_Item`      | string  | Description of the added amount (if applicable) |
+| `Monthly_Rate_USD`| float   | Monthly compensation in U.S. dollars |
+
+## License
+
+- **Data:** [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/) — public domain  
+- **Code:** [MIT](https://opensource.org/licenses/MIT)
+
+---
+
+## Getting started
+
+```bash
+git clone https://github.com/YOUR_USERNAME/va-disability-rates.git
+cd va-disability-rates
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Rebuild normalized 2025 dataset
+python scripts/fetch_2025.py
+
+## Contributing
+
+Issues and pull requests welcome! Please see the CONTRIBUTING.md for guidelines.
 
 ## Versioning & releases
 - Tag releases (v1.0.0, v1.1.0).
