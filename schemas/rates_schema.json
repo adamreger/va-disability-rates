@@ -1,0 +1,15 @@
+{
+  "fields": [
+    {"name": "Year", "type": "integer"},
+    {"name": "Rating", "type": "integer", "constraints": {"minimum": 10, "maximum": 100}},
+    {"name": "Dependent_Group", "type": "string", "missingValues": [""]},
+    {"name": "Dependent_Status", "type": "string", "missingValues": [""]},
+    {"name": "Has_Spouse", "type": "boolean", "missingValues": [""]},
+    {"name": "Parent_Count", "type": "integer", "missingValues": [""]},
+    {"name": "Child_Count", "type": "integer", "missingValues": [""]},
+    {"name": "Category", "type": "string", "constraints": {"enum": ["Basic","Added"]}},
+    {"name": "Added_Item", "type": "string", "missingValues": [""]},
+    {"name": "Monthly_Rate_USD", "type": "number"}
+  ],
+  "primaryKey": ["Year","Rating","Category","Dependent_Group","Dependent_Status","Added_Item"]
+}
