@@ -11,8 +11,7 @@ This repository provides **normalized datasets** of U.S. Department of Veterans 
 
 ## Why this repo?
 
-The VA publishes rates in multiple HTML tables, which can be cumbersome to work with programmatically.  
-This repo normalizes those tables into a consistent schema across years, so you can:
+The VA publishes rates in multiple HTML tables, which can be cumbersome to work with programmatically. This repo normalizes those tables into a consistent schema across years, so you can:
 
 - Import into Google Sheets, Excel, or BI tools
 - Load into Python/R data pipelines
@@ -80,6 +79,7 @@ pip install -r requirements.txt
 
 # Rebuild normalized 2025 dataset
 python scripts/fetch_2025.py
+```
 
 ## Contributing
 
