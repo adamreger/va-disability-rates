@@ -1,0 +1,7 @@
+-r scripts/requirements.txt   # pull in runtime deps
+
+# Dev/test/tooling
+frictionless>=5.16.0
+pytest>=8.0.0
+pre-commit>=3.7.0
+ruff>=0.6.9

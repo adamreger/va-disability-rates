@@ -39,7 +39,6 @@ va-disability-rates/
 │  └─ rates_schema.json        # column types, required fields
 ├─ tests/
 │  └─ test_validate.py
-├─ .gitattributes              # LFS rules (if needed)
 ├─ .github/workflows/ci.yml    # automatic validation on PRs
 ├─ CHANGELOG.md
 ├─ LICENSE
@@ -48,22 +47,22 @@ va-disability-rates/
 
 ## Schema
 
-| Column            | Type    | Description |
-|-------------------|---------|-------------|
-| `Year`            | int     | Effective year of the rate table |
-| `Rating`          | int     | Disability rating (10–100) |
-| `Category`        | string  | "Basic" or "Added" |
-| `Dependent_Group` | string  | "No children", "With children", or `null` for added items |
-| `Dependent_Status`| string  | Dependency description (varies by group) |
-| `Has_Spouse`      | boolean | Boolean flag to indicate if the rate incldues a dependent spouse |
-| `Parent_Count`    | int     | Number of dependent parents in the rate (0, 1, or 2) |
-| `Child_Count`     | int     | Number of dependent children in the rate (0 or 1) |
-| `Added_Item`      | string  | Description of the added amount (if applicable) |
-| `Monthly_Rate_USD`| float   | Monthly compensation in U.S. dollars |
+| Column             | Type    | Description                                                      |
+| ------------------ | ------- | ---------------------------------------------------------------- |
+| `Year`             | int     | Effective year of the rate table                                 |
+| `Rating`           | int     | Disability rating (10–100)                                       |
+| `Category`         | string  | "Basic" or "Added"                                               |
+| `Dependent_Group`  | string  | "No children", "With children", or `null` for added items        |
+| `Dependent_Status` | string  | Dependency description (varies by group)                         |
+| `Has_Spouse`       | boolean | Boolean flag to indicate if the rate incldues a dependent spouse |
+| `Parent_Count`     | int     | Number of dependent parents in the rate (0, 1, or 2)             |
+| `Child_Count`      | int     | Number of dependent children in the rate (0 or 1)                |
+| `Added_Item`       | string  | Description of the added amount (if applicable)                  |
+| `Monthly_Rate_USD` | float   | Monthly compensation in U.S. dollars                             |
 
 ## License
 
-- **Data:** [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/) — public domain  
+- **Data:** [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/) — public domain
 - **Code:** [MIT](https://opensource.org/licenses/MIT)
 
 ---
@@ -74,41 +73,57 @@ va-disability-rates/
 git clone https://github.com/YOUR_USERNAME/va-disability-rates.git
 cd va-disability-rates
 
+# Create and activate a virtual environment
+python -m venv .venv
+source .venv/bin/activate
+
 # Install dependencies
 pip install -r requirements.txt
+pre-commit install
+```
 
-# Rebuild normalized 2025 dataset
+Rebuild normalized 2025 dataset:
+```bash
 python scripts/fetch_2025.py
 ```
 
+## Usage Example
+Load dataset into pandas and query 100% ratings:
+```bash
+import pandas as pd
+
+df = pd.read_csv("data/2025/rates_normalized.csv")
+print(df[df["Rating"] == 100])
+```
+
+
 ## Contributing
 
-Issues and pull requests welcome! Please see the CONTRIBUTING.md for guidelines.
+Issues and pull requests welcome!
+Please see the [CONTRIBUTING.md](./CONTRIBUTING.md) for guidelines.
 
 ## Versioning & releases
-- Tag releases (v1.0.0, v1.1.0).
-  - **PATCH:** corrected values, no schema change.
-  - **MINOR:** new columns/years.
-  - **MAJOR:** breaking schema changes.
-- Publish GitHub Releases; attach the exact CSV/Parquet so consumers can pin.
+- **PATCH:** corrected values, no schema change.
+- **MINOR:** new columns/years.
+- **MAJOR:** breaking schema changes.
+Releases are tagged (v1.0.0, v1.1.0) and published with attached CSVs/Parquet so consumers can pin to exact versions.
 
 ## Validation & CI
-Add basic QA so every PR keeps data clean.
+Every PR is automatically validated against the schema:
 
 **schemas/rates_schema.json** (Frictionless example):
-```json
-{
-  "fields": [
-    {"name": "Year", "type": "integer"},
-    {"name": "Rating", "type": "integer", "constraints": {"minimum": 10, "maximum": 100}},
-    {"name": "Dependent_Group", "type": "string", "missingValues": [""]},
-    {"name": "Dependent_Status", "type": "string", "missingValues": [""]},
-    {"name": "Category", "type": "string", "constraints": {"enum": ["Basic","Added"]}},
-    {"name": "Added_Item", "type": "string", "missingValues": [""]},
-    {"name": "Monthly_Rate_USD", "type": "number"}
-  ],
-  "primaryKey": ["Year","Rating","Category","Dependent_Group","Dependent_Status","Added_Item"]
-}
+```yaml
+name: Validate data
+on: [push, pull_request]
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: pipx install frictionless
+      - run: |
+          frictionless validate data/**/rates_normalized.csv \
+            --schema schemas/rates_schema.json
 ```
 
 **.github/workflows/ci.yml:**
@@ -133,16 +148,6 @@ Inside each data/<year>/README.md:
 - Any manual adjustments or known caveats.
 - Row counts, quick summary stats, checksum (optional sha256).
 
-## Reproducibility
-- Put scraping/cleaning in scripts/.
-- A simple Makefile or justfile to rebuild:
-
-## Discoverability
-- Use good repo name & description (e.g., va-disability-rates-dataset).
-- Add topics: `dataset`, `csv`, `va`, `benefits`, `public-data`, etc.
-- Optional docs site with GitHub Pages (from docs/).
-
-## Licensing & ethics
-- For public gov data, CC0 (public domain) is common; if you require attribution, CC-BY 4.0.
-- Include NOTICE about the original VA source and that your repo is not affiliated with the VA.
-- Confirm no PII/PHI; keep data aggregate and public.
+## License
+- **Data:** [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/) — public domain
+- **Code:** [MIT](https://opensource.org/licenses/MIT)
