@@ -89,6 +89,58 @@ def _looks_like_10_20_table(headers: List[str], ncols: int) -> bool:
     return ncols == 2 and not any(re.search(r"\d+\\s*%", h) for h in headers)
 
 
+def _normalize_status_text(status: str) -> str:
+    text = re.sub(r"[^a-z0-9\s]", " ", (status or "").lower())
+    return re.sub(r"\s+", " ", text).strip()
+
+
+def _has_negated_term(text: str, term_pattern: str) -> bool:
+    pattern = rf"(?:no|without)\s+(?:[a-z]+\s+){{0,3}}{term_pattern}"
+    return bool(re.search(pattern, text))
+
+
+def _infer_basic_dependents(status: str) -> Dict[str, Any]:
+    normalized = _normalize_status_text(status)
+
+    has_spouse = False
+    if "spouse" in normalized and not _has_negated_term(normalized, r"spouse"):
+        has_spouse = True
+
+    parent_count = 0
+    if "parent" in normalized:
+        if not _has_negated_term(normalized, r"parents?"):
+            if (
+                re.search(r"\b(2|two)\s+(?:dependent\s+)?parents?\b", normalized)
+                or "both parents" in normalized
+            ):
+                parent_count = 2
+            elif re.search(r"\b(1|one)\s+(?:dependent\s+)?parent\b", normalized):
+                parent_count = 1
+            elif "parents" in normalized:
+                parent_count = 2
+            else:
+                parent_count = 1
+
+    has_child = False
+    if re.search(r"\bchild(?:ren)?\b", normalized) and not _has_negated_term(
+        normalized, r"child(?:ren)?"
+    ):
+        if re.search(r"with\s+(?:one|two|three|\d+)?\s*child", normalized):
+            has_child = True
+        elif re.search(r"child\s+only", normalized):
+            has_child = True
+        elif re.search(r"with\s+children", normalized):
+            has_child = True
+        else:
+            has_child = True
+
+    return {
+        "Has_Spouse": has_spouse,
+        "Parent_Count": parent_count,
+        "Has_Child": has_child,
+    }
+
+
 def _dep_group_from_h3_id(h3_id: str) -> Optional[str]:
     id_lower = (h3_id or "").lower()
     if id_lower.startswith("with-a-dependent-spouse-or-par"):
@@ -335,6 +387,20 @@ async def scrape(
         keep="first",
     ).reset_index(drop=True)
     after = len(df)
+
+    df["Has_Spouse"] = pd.NA
+    df["Parent_Count"] = pd.NA
+    df["Has_Child"] = pd.NA
+
+    basic_mask = df["Category"] == "Basic"
+    if basic_mask.any():
+        inferred = df.loc[basic_mask, "Dependent_Status"].apply(_infer_basic_dependents)
+        inferred_df = pd.DataFrame(list(inferred), index=df.index[basic_mask])
+        df.loc[basic_mask, ["Has_Spouse", "Parent_Count", "Has_Child"]] = inferred_df
+
+    df["Has_Spouse"] = df["Has_Spouse"].astype("boolean")
+    df["Has_Child"] = df["Has_Child"].astype("boolean")
+    df["Parent_Count"] = df["Parent_Count"].astype("Int64")
 
     # Print dedup summary and final count in debug mode
     if debug:
