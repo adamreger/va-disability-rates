@@ -13,6 +13,22 @@
       "type": "debugpy",
       "request": "launch",
       "program": "${file}"
+    },
+    {
+      "name": "Run fetch script with args",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${file}", // run the current file, or point directly to scripts/fetch_2025.py
+      "console": "integratedTerminal",
+      "args": [
+        "--url",
+        "https://www.va.gov/disability/compensation-rates/veteran-rates/past-rates-2024/",
+        "--year",
+        "2024",
+        "--preview",
+        "30",
+        "--debug"
+      ]
     }
   ]
 }

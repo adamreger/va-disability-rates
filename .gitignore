@@ -72,10 +72,6 @@ logs/
 *.log
 
 # -------------------------------
-# Other (optional)
+# CSVs in /scripts
 # -------------------------------
-# Uncomment if you generate these:
-# .idea/                # JetBrains IDEs
-# .history/             # VS Code History extension
-# coverage.xml
-# *.sqlite3
+scripts/*.csv

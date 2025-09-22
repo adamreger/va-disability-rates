@@ -22,18 +22,18 @@ The VA publishes rates in multiple HTML tables, which can be cumbersome to work 
 va-disability-rates/
 ├─ data/
 │  ├─ 2025/
-│  │  ├─ rates_normalized.csv
+│  │  ├─ va_disability_rates_2025.csv
 │  │  └─ README.md
 │  ├─ 2024/
-│  │  ├─ rates_normalized.csv
+│  │  ├─ va_disability_rates_2024.csv
 │  │  └─ README.md
 │  └─ 2023/
-│     ├─ rates_normalized.csv
+│     ├─ va_disability_rates_2023.csv
 │     └─ README.md
 ├─ docs/
 │  └─ index.md                 # Optional: GitHub Pages docs
 ├─ scripts/
-│  ├─ fetch_2025.py
+│  ├─ scrape_va_rates.py
 │  └─ validate.py              # schema/quality checks
 ├─ schemas/
 │  └─ rates_schema.json        # column types, required fields
