@@ -22,13 +22,13 @@ The VA publishes rates in multiple HTML tables, which can be cumbersome to work 
 va-disability-rates/
 ├─ data/
 │  ├─ 2025/
-│  │  ├─ va_disability_rates_2025.csv
+│  │  ├─ rates_normalized.csv
 │  │  └─ README.md
 │  ├─ 2024/
-│  │  ├─ va_disability_rates_2024.csv
+│  │  ├─ rates_normalized.csv
 │  │  └─ README.md
 │  └─ 2023/
-│     ├─ va_disability_rates_2023.csv
+│     ├─ rates_normalized.csv
 │     └─ README.md
 ├─ docs/
 │  └─ index.md                 # Optional: GitHub Pages docs
@@ -56,7 +56,7 @@ va-disability-rates/
 | `Dependent_Status` | string  | Dependency description (varies by group)                         |
 | `Has_Spouse`       | boolean | Boolean flag to indicate if the rate incldues a dependent spouse |
 | `Parent_Count`     | int     | Number of dependent parents in the rate (0, 1, or 2)             |
-| `Child_Count`      | int     | Number of dependent children in the rate (0 or 1)                |
+| `Has_Child`        | Boolean | Boolean flag to indicate if the rate incldues a dependent child  |
 | `Added_Item`       | string  | Description of the added amount (if applicable)                  |
 | `Monthly_Rate_USD` | float   | Monthly compensation in U.S. dollars                             |
 
@@ -83,9 +83,23 @@ python -m pip install -r requirements-dev.txt
 pre-commit install
 ```
 
-Rebuild normalized 2025 dataset:
+### Rebuild normalized dataset:
 ```bash
-python scripts/fetch_2025.py
+python scrape_va_rates.py \
+  --url "https://www.va.gov/disability/compensation-rates/veteran-rates/past-rates-2024/" \
+  --year 2024 \
+  --out va_disability_rates_2024.csv \
+  --debug
+```
+
+### Parameters:
+```python
+"--url", required=True, help="VA.gov disability rates page URL")
+"--year", required=True, type=int, help="Rates year (e.g., 2024)"
+"--out", help="Output CSV path")
+"--output", help="Output CSV path (alias for --out)")
+"--preview", type=int, help="Preview first N rows; no file written"
+"--debug", action="store_true", help="Verbose debug logging")
 ```
 
 ## Usage Example
@@ -99,7 +113,6 @@ print(df[df["Rating"] == 100])
 
 
 ## Contributing
-
 Issues and pull requests welcome!
 Please see the [CONTRIBUTING.md](./CONTRIBUTING.md) for guidelines.
 
