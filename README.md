@@ -27,20 +27,27 @@ va-disability-rates/
 │  ├─ 2024/
 │  │  ├─ rates_normalized.csv
 │  │  └─ README.md
-│  └─ 2023/
-│     ├─ rates_normalized.csv
-│     └─ README.md
-├─ docs/
-│  └─ index.md                 # Optional: GitHub Pages docs
+│  ├─ 2023/
+│  │  ├─ rates_normalized.csv
+│  │  └─ README.md
+│  ├─ 2022/
+│  │  ├─ rates_normalized.csv
+│  │  └─ README.md
+│  ├─ 2021/
+│  │  ├─ rates_normalized.csv
+│  │  └─ README.md
+│  ├─ 2020/
+│  │  ├─ rates_normalized.csv
+│  │  └─ README.md
+├─ schemas/
+│  └─ rates_schema.json                   # column types, required fields
 ├─ scripts/
 │  ├─ scrape_va_rates.py
-│  └─ validate.py              # schema/quality checks
-├─ schemas/
-│  └─ rates_schema.json        # column types, required fields
 ├─ tests/
-│  └─ test_validate.py
-├─ .github/workflows/ci.yml    # automatic validation on PRs
+│  └─ test_scrape_va_rates.py
+├─ .github/workflows/validate-data.yml    # automatic validation on PRs
 ├─ CHANGELOG.md
+├─ CONTRIBUTING.md
 ├─ LICENSE
 └─ README.md
 ```
@@ -56,7 +63,7 @@ va-disability-rates/
 | `Dependent_Status` | string  | Dependency description (varies by group)                         |
 | `Has_Spouse`       | boolean | Boolean flag to indicate if the rate incldues a dependent spouse |
 | `Parent_Count`     | int     | Number of dependent parents in the rate (0, 1, or 2)             |
-| `Has_Child`        | Boolean | Boolean flag to indicate if the rate incldues a dependent child  |
+| `Has_Child`        | boolean | Boolean flag to indicate if the rate incldues a dependent child  |
 | `Added_Item`       | string  | Description of the added amount (if applicable)                  |
 | `Monthly_Rate_USD` | float   | Monthly compensation in U.S. dollars                             |
 
@@ -88,8 +95,7 @@ pre-commit install
 python scrape_va_rates.py \
   --url "https://www.va.gov/disability/compensation-rates/veteran-rates/past-rates-2024/" \
   --year 2024 \
-  --out va_disability_rates_2024.csv \
-  --debug
+  --preview 25
 ```
 
 ### Parameters:
@@ -123,36 +129,32 @@ Please see the [CONTRIBUTING.md](./CONTRIBUTING.md) for guidelines.
 Releases are tagged (v1.0.0, v1.1.0) and published with attached CSVs/Parquet so consumers can pin to exact versions.
 
 ## Validation & CI
-Every PR is automatically validated against the schema:
+Every PR is automatically validated against the schema in GitHub CI
 
-**schemas/rates_schema.json** (Frictionless example):
+**schemas/rates_schema.json**:
 ```yaml
 name: Validate data
-on: [push, pull_request]
+
+on:
+  push:
+  pull_request:
+
 jobs:
   validate:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: pipx install frictionless
-      - run: |
-          frictionless validate data/**/rates_normalized.csv \
-            --schema schemas/rates_schema.json
-```
-
-**.github/workflows/ci.yml:**
-```yaml
-name: Validate data
-on: [push, pull_request]
-jobs:
-  validate:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - run: pipx install frictionless
-      - run: |
-          frictionless validate data/**/rates_normalized.csv \
-            --schema schemas/rates_schema.json
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install frictionless
+      - name: Validate data files
+        run: |
+          frictionless validate data/**/rates_normalized.csv --schema schemas/rates_schema.json
 ```
 
 ## Data Dictionary (per-year README)

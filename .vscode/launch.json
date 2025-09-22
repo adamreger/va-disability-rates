@@ -18,7 +18,7 @@
       "name": "Run fetch script with args",
       "type": "debugpy",
       "request": "launch",
-      "program": "${file}", // run the current file, or point directly to scripts/fetch_2025.py
+      "program": "${file}",
       "console": "integratedTerminal",
       "args": [
         "--url",
