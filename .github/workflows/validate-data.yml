@@ -19,4 +19,5 @@ jobs:
           python -m pip install frictionless
       - name: Validate data files
         run: |
+          shopt -s globstar 2>/dev/null || true
           frictionless validate data/**/rates_normalized.csv --schema schemas/rates_schema.json
