@@ -9,15 +9,16 @@ import pytest
 # Stub the playwright import used by the scraper so we can load the module without the dependency
 playwright_module = types.ModuleType("playwright")
 async_api_module = types.ModuleType("async_api")
-async_api_module.async_playwright = object()  # placeholder
-playwright_module.async_api = async_api_module
+setattr(async_api_module, "async_playwright", object())  # placeholder
+setattr(playwright_module, "async_api", async_api_module)
 sys.modules.setdefault("playwright", playwright_module)
 sys.modules.setdefault("playwright.async_api", async_api_module)
 
 MODULE_PATH = Path(__file__).resolve().parents[1] / "scripts" / "scrape_va_rates.py"
 SPEC = importlib.util.spec_from_file_location("scrape_va_rates", MODULE_PATH)
+if SPEC is None or SPEC.loader is None:
+    raise RuntimeError("Unable to load scrape_va_rates module spec")
 svr = importlib.util.module_from_spec(SPEC)
-assert SPEC and SPEC.loader
 SPEC.loader.exec_module(svr)  # type: ignore[misc]
 
 
