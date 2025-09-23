@@ -1,0 +1,127 @@
+Year,Rating,Dependent_Group,Dependent_Status,Category,Added_Item,Monthly_Rate_USD,Has_Spouse,Parent_Count,Has_Child
+2021,10,All,All,Basic,,144.14,False,0,False
+2021,20,All,All,Basic,,284.93,False,0,False
+2021,30,No children,Veteran alone (no dependents),Basic,,441.35,False,0,False
+2021,40,No children,Veteran alone (no dependents),Basic,,635.77,False,0,False
+2021,50,No children,Veteran alone (no dependents),Basic,,905.04,False,0,False
+2021,60,No children,Veteran alone (no dependents),Basic,,1146.39,False,0,False
+2021,30,No children,With spouse (no parents or children),Basic,,493.35,True,0,False
+2021,40,No children,With spouse (no parents or children),Basic,,705.77,True,0,False
+2021,50,No children,With spouse (no parents or children),Basic,,992.04,True,0,False
+2021,60,No children,With spouse (no parents or children),Basic,,1251.39,True,0,False
+2021,30,No children,With spouse and 1 parent (no children),Basic,,535.35,True,1,False
+2021,40,No children,With spouse and 1 parent (no children),Basic,,761.77,True,1,False
+2021,50,No children,With spouse and 1 parent (no children),Basic,,1062.04,True,1,False
+2021,60,No children,With spouse and 1 parent (no children),Basic,,1335.39,True,1,False
+2021,30,No children,With spouse and 2 parents (no children),Basic,,577.35,True,2,False
+2021,40,No children,With spouse and 2 parents (no children),Basic,,817.77,True,2,False
+2021,50,No children,With spouse and 2 parents (no children),Basic,,1132.04,True,2,False
+2021,60,No children,With spouse and 2 parents (no children),Basic,,1419.39,True,2,False
+2021,30,No children,With 1 parent (no spouse or children),Basic,,483.35,False,1,False
+2021,40,No children,With 1 parent (no spouse or children),Basic,,691.77,False,1,False
+2021,50,No children,With 1 parent (no spouse or children),Basic,,975.04,False,1,False
+2021,60,No children,With 1 parent (no spouse or children),Basic,,1230.39,False,1,False
+2021,30,No children,With 2 parents (no spouse or children),Basic,,525.35,False,2,False
+2021,40,No children,With 2 parents (no spouse or children),Basic,,747.77,False,2,False
+2021,50,No children,With 2 parents (no spouse or children),Basic,,1045.04,False,2,False
+2021,60,No children,With 2 parents (no spouse or children),Basic,,1314.39,False,2,False
+2021,30,,,Added,Spouse receiving Aid and Attendance,48.0,,,
+2021,40,,,Added,Spouse receiving Aid and Attendance,64.0,,,
+2021,50,,,Added,Spouse receiving Aid and Attendance,81.0,,,
+2021,60,,,Added,Spouse receiving Aid and Attendance,96.0,,,
+2021,70,No children,Veteran alone (no dependents),Basic,,1444.71,False,0,False
+2021,80,No children,Veteran alone (no dependents),Basic,,1679.35,False,0,False
+2021,90,No children,Veteran alone (no dependents),Basic,,1887.18,False,0,False
+2021,100,No children,Veteran alone (no dependents),Basic,,3146.42,False,0,False
+2021,70,No children,With spouse (no parents or children),Basic,,1566.71,True,0,False
+2021,80,No children,With spouse (no parents or children),Basic,,1819.35,True,0,False
+2021,90,No children,With spouse (no parents or children),Basic,,2044.18,True,0,False
+2021,100,No children,With spouse (no parents or children),Basic,,3321.85,True,0,False
+2021,70,No children,With spouse and 1 parent (no children),Basic,,1664.71,True,1,False
+2021,80,No children,With spouse and 1 parent (no children),Basic,,1931.35,True,1,False
+2021,90,No children,With spouse and 1 parent (no children),Basic,,2170.18,True,1,False
+2021,100,No children,With spouse and 1 parent (no children),Basic,,3462.64,True,1,False
+2021,70,No children,With spouse and 2 parents (no children),Basic,,1762.71,True,2,False
+2021,80,No children,With spouse and 2 parents (no children),Basic,,2043.45,True,2,False
+2021,90,No children,With spouse and 2 parents (no children),Basic,,2296.18,True,2,False
+2021,100,No children,With spouse and 2 parents (no children),Basic,,3603.43,True,2,False
+2021,70,No children,With 1 parent (no spouse or children),Basic,,1542.71,False,1,False
+2021,80,No children,With 1 parent (no spouse or children),Basic,,1791.35,False,1,False
+2021,90,No children,With 1 parent (no spouse or children),Basic,,2013.18,False,1,False
+2021,100,No children,With 1 parent (no spouse or children),Basic,,3287.21,False,1,False
+2021,70,No children,With 2 parents (no spouse or children),Basic,,1640.71,False,2,False
+2021,80,No children,With 2 parents (no spouse or children),Basic,,1903.35,False,2,False
+2021,90,No children,With 2 parents (no spouse or children),Basic,,2139.18,False,2,False
+2021,100,No children,With 2 parents (no spouse or children),Basic,,3428.0,False,2,False
+2021,70,,,Added,Spouse receiving Aid and Attendance,113.0,,,
+2021,80,,,Added,Spouse receiving Aid and Attendance,129.0,,,
+2021,90,,,Added,Spouse receiving Aid and Attendance,145.0,,,
+2021,100,,,Added,Spouse receiving Aid and Attendance,160.89,,,
+2021,30,With children,Veteran with 1 child only (no spouse or parents),Basic,,476.35,False,0,True
+2021,40,With children,Veteran with 1 child only (no spouse or parents),Basic,,681.77,False,0,True
+2021,50,With children,Veteran with 1 child only (no spouse or parents),Basic,,963.04,False,0,True
+2021,60,With children,Veteran with 1 child only (no spouse or parents),Basic,,1216.39,False,0,True
+2021,30,With children,With 1 child and spouse (no parents),Basic,,532.35,True,0,True
+2021,40,With children,With 1 child and spouse (no parents),Basic,,756.77,True,0,True
+2021,50,With children,With 1 child and spouse (no parents),Basic,,1056.04,True,0,True
+2021,60,With children,With 1 child and spouse (no parents),Basic,,1328.39,True,0,True
+2021,30,With children,"With 1 child, spouse, and 1 parent",Basic,,574.35,True,1,True
+2021,40,With children,"With 1 child, spouse, and 1 parent",Basic,,812.77,True,1,True
+2021,50,With children,"With 1 child, spouse, and 1 parent",Basic,,1126.04,True,1,True
+2021,60,With children,"With 1 child, spouse, and 1 parent",Basic,,1412.39,True,1,True
+2021,30,With children,"With 1 child, spouse, and 2 parents",Basic,,616.35,True,2,True
+2021,40,With children,"With 1 child, spouse, and 2 parents",Basic,,868.77,True,2,True
+2021,50,With children,"With 1 child, spouse, and 2 parents",Basic,,1196.04,True,2,True
+2021,60,With children,"With 1 child, spouse, and 2 parents",Basic,,1496.39,True,2,True
+2021,30,With children,With 1 child and 1 parent (no spouse),Basic,,518.35,False,1,True
+2021,40,With children,With 1 child and 1 parent (no spouse),Basic,,737.77,False,1,True
+2021,50,With children,With 1 child and 1 parent (no spouse),Basic,,1033.04,False,1,True
+2021,60,With children,With 1 child and 1 parent (no spouse),Basic,,1300.39,False,1,True
+2021,30,With children,With 1 child and 2 parents (no spouse),Basic,,560.35,False,2,True
+2021,40,With children,With 1 child and 2 parents (no spouse),Basic,,793.77,False,2,True
+2021,50,With children,With 1 child and 2 parents (no spouse),Basic,,1103.04,False,2,True
+2021,60,With children,With 1 child and 2 parents (no spouse),Basic,,1384.39,False,2,True
+2021,30,,,Added,Each additional child under age 18,26.0,,,
+2021,40,,,Added,Each additional child under age 18,34.0,,,
+2021,50,,,Added,Each additional child under age 18,43.0,,,
+2021,60,,,Added,Each additional child under age 18,52.0,,,
+2021,30,,,Added,Each additional child over age 18 in a qualifying school program,84.0,,,
+2021,40,,,Added,Each additional child over age 18 in a qualifying school program,112.0,,,
+2021,50,,,Added,Each additional child over age 18 in a qualifying school program,140.0,,,
+2021,60,,,Added,Each additional child over age 18 in a qualifying school program,168.0,,,
+2021,30,,,Added,Spouse receving Aid and Attendance,48.0,,,
+2021,40,,,Added,Spouse receving Aid and Attendance,64.0,,,
+2021,50,,,Added,Spouse receving Aid and Attendance,81.0,,,
+2021,60,,,Added,Spouse receving Aid and Attendance,96.0,,,
+2021,70,With children,Veteran with child only (no spouse or parents),Basic,,1526.71,False,0,True
+2021,80,With children,Veteran with child only (no spouse or parents),Basic,,1772.35,False,0,True
+2021,90,With children,Veteran with child only (no spouse or parents),Basic,,1992.18,False,0,True
+2021,100,With children,Veteran with child only (no spouse or parents),Basic,,3263.74,False,0,True
+2021,70,With children,With 1 child and spouse (no parents),Basic,,1656.71,True,0,True
+2021,80,With children,With 1 child and spouse (no parents),Basic,,1922.35,True,0,True
+2021,90,With children,With 1 child and spouse (no parents),Basic,,2160.18,True,0,True
+2021,100,With children,With 1 child and spouse (no parents),Basic,,3450.32,True,0,True
+2021,70,With children,"With 1 child, spouse and 1 parent",Basic,,1754.71,True,1,True
+2021,80,With children,"With 1 child, spouse and 1 parent",Basic,,2034.35,True,1,True
+2021,90,With children,"With 1 child, spouse and 1 parent",Basic,,2286.18,True,1,True
+2021,100,With children,"With 1 child, spouse and 1 parent",Basic,,3591.11,True,1,True
+2021,70,With children,"With 1 child, spouse and 2 parents",Basic,,1852.71,True,2,True
+2021,80,With children,"With 1 child, spouse and 2 parents",Basic,,2146.35,True,2,True
+2021,90,With children,"With 1 child, spouse and 2 parents",Basic,,2412.18,True,2,True
+2021,100,With children,"With 1 child, spouse and 2 parents",Basic,,3731.9,True,2,True
+2021,70,With children,With 1 child and 1 parent,Basic,,1624.71,False,1,True
+2021,80,With children,With 1 child and 1 parent,Basic,,1884.35,False,1,True
+2021,90,With children,With 1 child and 1 parent,Basic,,2118.18,False,1,True
+2021,100,With children,With 1 child and 1 parent,Basic,,3404.53,False,1,True
+2021,70,With children,With 1 child and 2 parents (no spouse),Basic,,1722.71,False,2,True
+2021,80,With children,With 1 child and 2 parents (no spouse),Basic,,1996.35,False,2,True
+2021,90,With children,With 1 child and 2 parents (no spouse),Basic,,2244.18,False,2,True
+2021,100,With children,With 1 child and 2 parents (no spouse),Basic,,3545.32,False,2,True
+2021,70,,,Added,Each additional child under age 18,61.0,,,
+2021,80,,,Added,Each additional child under age 18,69.0,,,
+2021,90,,,Added,Each additional child under age 18,78.0,,,
+2021,100,,,Added,Each additional child under age 18,87.17,,,
+2021,70,,,Added,Each additional child over age 18 in a qualifying school program,197.0,,,
+2021,80,,,Added,Each additional child over age 18 in a qualifying school program,225.0,,,
+2021,90,,,Added,Each additional child over age 18 in a qualifying school program,253.0,,,
+2021,100,,,Added,Each additional child over age 18 in a qualifying school program,281.57,,,
