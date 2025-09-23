@@ -27,27 +27,6 @@
       ]
     },
     {
-      "name": "Has_Spouse",
-      "type": "boolean",
-      "missingValues": [
-        ""
-      ]
-    },
-    {
-      "name": "Parent_Count",
-      "type": "integer",
-      "missingValues": [
-        ""
-      ]
-    },
-    {
-      "name": "Has_Child",
-      "type": "boolean",
-      "missingValues": [
-        ""
-      ]
-    },
-    {
       "name": "Category",
       "type": "string",
       "constraints": {
@@ -67,6 +46,27 @@
     {
       "name": "Monthly_Rate_USD",
       "type": "number"
+    },
+    {
+      "name": "Has_Spouse",
+      "type": "boolean",
+      "missingValues": [
+        ""
+      ]
+    },
+    {
+      "name": "Parent_Count",
+      "type": "integer",
+      "missingValues": [
+        ""
+      ]
+    },
+    {
+      "name": "Has_Child",
+      "type": "boolean",
+      "missingValues": [
+        ""
+      ]
     }
   ],
   "primaryKey": [
