@@ -77,7 +77,7 @@ va-disability-rates/
 ## Getting started
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/va-disability-rates.git
+git clone git@github.com:YOUR_USERNAME/va-disability-rates.git
 cd va-disability-rates
 
 # Create and activate a virtual environment
@@ -102,12 +102,12 @@ python scrape_va_rates.py \
 
 ### Parameters:
 ```python
-"--url", required=True, help="VA.gov disability rates page URL")
+"--url", required=True, help="VA.gov disability rates page URL"
 "--year", required=True, type=int, help="Rates year (e.g., 2024)"
-"--out", help="Output CSV path")
-"--output", help="Output CSV path (alias for --out)")
+"--out", help="Output CSV path"
+"--output", help="Output CSV path (alias for --out)"
 "--preview", type=int, help="Preview first N rows; no file written"
-"--debug", action="store_true", help="Verbose debug logging")
+"--debug", action="store_true", help="Verbose debug logging"
 "--write-readme", action="store_true", help="Generate a README.md alongside the output CSV. Merges in any previous bullets under "General Notes""
 ```
 
