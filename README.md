@@ -40,12 +40,12 @@ va-disability-rates/
 │  │  ├─ rates_normalized.csv
 │  │  └─ README.md
 ├─ schemas/
-│  └─ rates_schema.json                   # column types, required fields
+│  └─ rates_schema.json
 ├─ scripts/
 │  ├─ scrape_va_rates.py
 ├─ tests/
 │  └─ test_scrape_va_rates.py
-├─ .github/workflows/validate-data.yml    # automatic validation on PRs
+├─ .github/workflows/validate-data.yml
 ├─ CHANGELOG.md
 ├─ CONTRIBUTING.md
 ├─ LICENSE
