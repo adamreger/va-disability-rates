@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
 import argparse
 import asyncio
+import hashlib
 import re
 import subprocess
 import sys
+from datetime import datetime
+from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 import pandas as pd
@@ -25,6 +28,122 @@ def ensure_playwright_browsers() -> None:
 def _parse_rate_to_float(s: str) -> float:
     clean = s.replace("$", "").replace(",", "").replace("\u00a0", " ").strip()
     return float(clean)
+
+
+async def _extract_effective_text(page: Any, debug: bool = False) -> Optional[str]:
+    try:
+        locator = page.locator("strong", has_text="Effective")
+        if await locator.count() == 0:
+            return None
+        text = (await locator.first.inner_text()).strip()
+        if debug:
+            print(f"[DEBUG] Found effective date text: {text}")
+        return text
+    except Exception:
+        return None
+
+
+def _format_effective_line(raw_text: Optional[str], rates_year: int) -> str:
+    if not raw_text:
+        return f"Effective date: Unknown (see source) for {rates_year} rates"
+
+    match = re.search(
+        r"Effective\s+([A-Za-z]+)\s+(\d{1,2})(?:,)?\s+(\d{4})",
+        raw_text,
+        flags=re.IGNORECASE,
+    )
+    if not match:
+        return f"{raw_text.strip()} for {rates_year} rates"
+
+    month_name, day_str, year_str = match.groups()
+    try:
+        parsed = datetime.strptime(f"{month_name} {day_str} {year_str}", "%B %d %Y")
+    except ValueError:
+        return f"{raw_text.strip()} for {rates_year} rates"
+
+    month_abbr = parsed.strftime("%b")
+    return f"Effective {month_abbr} {parsed.day}, {parsed.year} for {rates_year} rates"
+
+
+def _extract_existing_general_notes(readme_path: Path) -> List[str]:
+    if not readme_path.exists():
+        return []
+
+    notes: List[str] = []
+    in_notes_section = False
+    for line in readme_path.read_text(encoding="utf-8").splitlines():
+        stripped = line.strip()
+        if stripped.lower() == "## general notes":
+            in_notes_section = True
+            continue
+        if in_notes_section:
+            if stripped.startswith("## "):
+                break
+            if stripped.startswith("- "):
+                notes.append(stripped)
+    return notes
+
+
+def _generate_summary_lines(df: pd.DataFrame, duplicates_removed: int) -> List[str]:
+    total_rows = len(df)
+    category_counts = df["Category"].value_counts().to_dict()
+    basic_rows = int(category_counts.get("Basic", 0))
+    added_rows = int(category_counts.get("Added", 0))
+
+    ratings = sorted(df["Rating"].unique())
+    rating_min = ratings[0] if ratings else "n/a"
+    rating_max = ratings[-1] if ratings else "n/a"
+
+    monthly = df["Monthly_Rate_USD"]
+    monthly_min = monthly.min()
+    monthly_max = monthly.max()
+    monthly_mean = monthly.mean()
+
+    return [
+        f"- Total rows: {total_rows}",
+        f"- Basic rows: {basic_rows}; Added rows: {added_rows}",
+        f"- Ratings covered: {rating_min}-{rating_max} ({len(ratings)} unique)",
+        f"- Monthly rate (USD): min ${monthly_min:,.2f}, max ${monthly_max:,.2f}, mean ${monthly_mean:,.2f}",
+        f"- Duplicates removed during normalization: {duplicates_removed}",
+    ]
+
+
+def _write_dataset_readme(
+    output_csv: Path,
+    df: pd.DataFrame,
+    url: str,
+    year: int,
+    effective_text: Optional[str],
+    duplicates_removed: int,
+) -> None:
+    directory = output_csv.parent
+    readme_path = directory / "README.md"
+
+    existing_notes = _extract_existing_general_notes(readme_path)
+
+    checksum = hashlib.sha256(output_csv.read_bytes()).hexdigest()
+
+    lines: List[str] = []
+    lines.append(f"# VA Disability Compensation Rates – {year}")
+    lines.append("")
+    lines.append(f"- {_format_effective_line(effective_text, year)}")
+    lines.append(f"- Source: {url}")
+    lines.append("")
+    lines.append("## Dataset Summary")
+    lines.extend(_generate_summary_lines(df, duplicates_removed))
+    lines.append("")
+    lines.append("## Checksum")
+    lines.append(f"- SHA256: `{checksum}`")
+    lines.append("")
+    lines.append("## General Notes")
+
+    note_lines = existing_notes or ["- _None recorded._"]
+    lines.extend(note_lines)
+    lines.append("")
+
+    directory.mkdir(parents=True, exist_ok=True)
+    readme_path.write_text("\n".join(lines), encoding="utf-8")
+    print(f"Saved dataset README to {readme_path}")
 
 
 # Grab slotted/distributed text from cells/headers living under <slot> inside shadow DOM
@@ -185,8 +304,11 @@ async def scrape(
     output_file: Optional[str],
     preview: Optional[int] = None,
     debug: bool = False,
+    write_readme: bool = False,
 ) -> None:
     ensure_playwright_browsers()
+
+    effective_text: Optional[str] = None
 
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=True)
@@ -196,6 +318,8 @@ async def scrape(
             print(f"[DEBUG] Navigating to: {url}")
 
         await page.goto(url, wait_until="networkidle")
+
+        effective_text = await _extract_effective_text(page, debug)
 
         # Expand all accordions
         buttons = await page.query_selector_all(
@@ -408,14 +532,29 @@ async def scrape(
         print(f"[DEBUG] Deduplication removed {removed} duplicate rows")
         print(f"[DEBUG] Final row count after dedup: {after}")
 
+    duplicates_removed = before - after
+
     if preview:
         print(df.head(preview).to_string(index=False))
         print("[INFO] Preview mode: skipped writing CSV.")
+        if write_readme:
+            print("[INFO] README generation skipped in preview mode.")
     else:
         if not output_file:
             raise SystemExit("Error: provide --out/--output or run with --preview.")
         df.to_csv(output_file, index=False)
         print(f"Saved {len(df)} rows to {output_file}")
+
+        if write_readme:
+            output_path = Path(output_file)
+            _write_dataset_readme(
+                output_path,
+                df,
+                url,
+                year,
+                effective_text,
+                duplicates_removed,
+            )
 
 
 # ---------- CLI ----------
@@ -434,7 +573,24 @@ if __name__ == "__main__":
         "--preview", type=int, help="Preview first N rows; no file written"
     )
     parser.add_argument("--debug", action="store_true", help="Verbose debug logging")
+    parser.add_argument(
+        "--write-readme",
+        action="store_true",
+        help="Generate a README.md alongside the output CSV",
+    )
     args = parser.parse_args()
 
     out_path = args.out or args.output
-    asyncio.run(scrape(args.url, args.year, out_path, args.preview, args.debug))
+    if args.write_readme and not out_path:
+        parser.error("--write-readme requires --out/--output")
+
+    asyncio.run(
+        scrape(
+            args.url,
+            args.year,
+            out_path,
+            args.preview,
+            args.debug,
+            args.write_readme,
+        )
+    )

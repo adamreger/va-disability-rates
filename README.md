@@ -93,9 +93,11 @@ pre-commit install
 ### Rebuild normalized dataset:
 ```bash
 python scrape_va_rates.py \
-  --url "https://www.va.gov/disability/compensation-rates/veteran-rates/past-rates-2024/" \
-  --year 2024 \
-  --preview 25
+  --url "https://www.va.gov/disability/compensation-rates/veteran-rates" \
+  --year 2025 \
+  --out ../data/2025/rates_normalized.csv \
+  --debug \
+  --write-readme
 ```
 
 ### Parameters:
@@ -106,6 +108,7 @@ python scrape_va_rates.py \
 "--output", help="Output CSV path (alias for --out)")
 "--preview", type=int, help="Preview first N rows; no file written"
 "--debug", action="store_true", help="Verbose debug logging")
+"--write-readme", action="store_true", help="Generate a README.md alongside the output CSV. Merges in any previous bullets under "General Notes""
 ```
 
 ## Usage Example
@@ -162,7 +165,7 @@ Inside each data/<year>/README.md:
 - Effective date (e.g., “Effective Dec 1, 2024 for 2025 rates”).
 - Source URL(s).
 - Any manual adjustments or known caveats.
-- Row counts, quick summary stats, checksum (optional sha256).
+- Row counts, quick summary stats, checksum (sha256).
 
 ## License
 - **Data:** [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/) — public domain
