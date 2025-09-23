@@ -19,5 +19,14 @@ jobs:
           python -m pip install frictionless
       - name: Validate data files
         run: |
-          shopt -s globstar 2>/dev/null || true
-          frictionless validate data/**/rates_normalized.csv --schema schemas/rates_schema.json
+          set -euo pipefail
+          shopt -s globstar nullglob 2>/dev/null || true
+          files=(data/**/rates_normalized.csv)
+          if [ ${#files[@]} -eq 0 ]; then
+            echo "No rates_normalized.csv files found" >&2
+            exit 1
+          fi
+          for csv in "${files[@]}"; do
+            echo "Validating ${csv}"
+            frictionless validate "$csv" --schema schemas/rates_schema.json
+          done
