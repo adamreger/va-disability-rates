@@ -14,4 +14,4 @@
 - SHA256: `d80e4f18186bb77927e25d31a7a48ba674e020ea0c1d8973348d0c33879b8754`
 
 ## General Notes
-- A misspelling on the page is causing erroneous data to be added to the CSV. (Spouse **receiving** Aid and Attendance vs. Spouse **receving** Aid and Attendance)
+- A misspelling on the page is causing erroneous data to be added to the CSV. ("Spouse rec***e***ving Aid and Attendance" vs. "Spouse rec***ei***ving Aid and Attendance")
