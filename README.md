@@ -21,6 +21,9 @@ The VA publishes rates in multiple HTML tables, which can be cumbersome to work 
 ```
 va-disability-rates/
 ├─ data/
+│  ├─ 2026/
+│  │  ├─ rates_normalized.csv
+│  │  └─ README.md
 │  ├─ 2025/
 │  │  ├─ rates_normalized.csv
 │  │  └─ README.md
