@@ -92,10 +92,10 @@ pre-commit install
 
 ### Rebuild normalized dataset:
 ```bash
-python scrape_va_rates.py \
+python ../scripts/scrape_va_rates.py \
   --url "https://www.va.gov/disability/compensation-rates/veteran-rates" \
-  --year 2025 \
-  --out ../data/2025/rates_normalized.csv \
+  --year 2026 \
+  --out ../data/2026/rates_normalized.csv \
   --debug \
   --write-readme
 ```
