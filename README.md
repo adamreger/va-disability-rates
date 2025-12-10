@@ -2,7 +2,7 @@
 
 This repository provides **normalized datasets** of U.S. Department of Veterans Affairs (VA) disability compensation rates, along with the **scraping and normalization scripts** used to generate them.
 
-- **Coverage:** 2020 – 2025 (effective December 1 of the prior year)
+- **Coverage:** 2020 – 2026 (effective December 1 of the prior year)
 - **Format:** CSV (UTF-8, RFC 4180 compliant) with one row per (Year, Rating, Category, Dependent_Status / Added_Item)
 - **Extras:** Python scripts for scraping, normalization, and validation
 - **Source:** [VA Disability Compensation Rates](https://www.va.gov/disability/compensation-rates/veteran-rates/)
