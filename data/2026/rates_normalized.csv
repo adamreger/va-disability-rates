@@ -89,10 +89,6 @@ Year,Rating,Dependent_Group,Dependent_Status,Category,Added_Item,Monthly_Rate_US
 2026,40,,,Added,Each additional child over age 18 in a qualifying school program,140.0,,,
 2026,50,,,Added,Each additional child over age 18 in a qualifying school program,176.0,,,
 2026,60,,,Added,Each additional child over age 18 in a qualifying school program,211.0,,,
-2026,30,,,Added,Spouse receving Aid and Attendance,61.0,,,
-2026,40,,,Added,Spouse receving Aid and Attendance,81.0,,,
-2026,50,,,Added,Spouse receving Aid and Attendance,101.0,,,
-2026,60,,,Added,Spouse receving Aid and Attendance,121.0,,,
 2026,70,With children,Veteran with child only (no spouse or parents),Basic,,1910.45,False,0,True
 2026,80,With children,Veteran with child only (no spouse or parents),Basic,,2219.15,False,0,True
 2026,90,With children,Veteran with child only (no spouse or parents),Basic,,2494.3,False,0,True
