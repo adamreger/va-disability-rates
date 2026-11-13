@@ -9,7 +9,7 @@ We welcome pull requests for **new years of data, bug fixes, or improvements to 
 
 ### 1. Clone the repo:
 ```bash
-git clone git@github.com:adamreger/va-disability-rates.git
+git clone git@github.com:{GITHUB_USERNAME}/va-disability-rates.git
 cd va-disability-rates
 ```
 

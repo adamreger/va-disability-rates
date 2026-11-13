@@ -82,7 +82,7 @@ va-disability-rates/
 ## Getting started
 
 ```bash
-git clone git@github.com:adamreger/va-disability-rates.git
+git clone git@github.com:{GITHUB_USERNAME}/va-disability-rates.git
 cd va-disability-rates
 
 # Create and activate a virtual environment
