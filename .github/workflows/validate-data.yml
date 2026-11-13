@@ -1,4 +1,4 @@
-name: Validate data
+name: Validate code and data
 
 on:
   push:
@@ -16,7 +16,13 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install frictionless
+          python -m pip install -r requirements-dev.txt
+      - name: Check lint and formatting
+        run: |
+          ruff check scripts tests
+          ruff format --check scripts tests
+      - name: Run tests
+        run: python -m pytest
       - name: Validate data files
         run: |
           set -euo pipefail

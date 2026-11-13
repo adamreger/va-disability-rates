@@ -9,7 +9,7 @@ We welcome pull requests for **new years of data, bug fixes, or improvements to 
 
 ### 1. Clone the repo:
 ```bash
-git clone git@github.com:YOUR_USERNAME/va-disability-rates.git
+git clone git@github.com:adamreger/va-disability-rates.git
 cd va-disability-rates
 ```
 
@@ -17,32 +17,52 @@ cd va-disability-rates
 ```bash
 python -m venv .venv
 source .venv/bin/activate
-pip install -r requirements.txt
+python -m pip install -r requirements-dev.txt
 pre-commit install
 ```
 
-### 3. Run tests
+### 3. Run code checks
 ```bash
-pytest
+python -m pytest
+ruff check scripts tests
+ruff format --check scripts tests
 ```
 
-## Adding a New Year of Data
-1. Scrape rates from the official VA page (e.g. for 2026: https://www.va.gov/disability/compensation-rates/veteran-rates/). Past years live under /past-rates-YYYY/.
+Tests replace browser I/O, so they run without downloading Chromium or accessing the VA website.
 
-2. Normalize the tables into the schema used in:
+## Adding or Correcting a Year of Data
+
+Run these commands from the repository root. Updates normally affect one rate year. Use the same process for a historical correction, leaving other years unchanged.
+
+1. Select the official VA source page for the year being updated. Check the page's effective date: `--year` labels the output and must match the rate year on that page.
+
+2. Preview the extraction. For example, when the source page covers 2026:
+
 ```bash
-data/<year>/rates_normalized.csv
+python scripts/scrape_va_rates.py \
+  --url "https://www.va.gov/disability/compensation-rates/veteran-rates/" \
+  --year 2026 \
+  --preview 5 \
+  --debug
 ```
 
-3. Place the file in a new folder:
+3. Generate the CSV and its README. Change the URL, year, and output directory together for a different year:
+
 ```bash
-data/2026/rates_normalized.csv
+python scripts/scrape_va_rates.py \
+  --url "https://www.va.gov/disability/compensation-rates/veteran-rates/" \
+  --year 2026 \
+  --out data/2026/rates_normalized.csv \
+  --write-readme
 ```
 
-4. Add a short `README.md` in that folder with:
-* Source URL(s)
-* Effective date
-* Notes about any manual cleanup
+The scraper installs Chromium through Playwright on first use. It replaces the selected CSV and preserves existing bullets in the README's `General Notes` section.
+
+4. Validate the CSV using the command below. Review the source URL, effective date, row counts, ratings, and representative Basic and Added amounts against the source page. Schema validation checks structure and types; the source comparison checks the values.
+
+5. Review `git diff -- data/2026/` and `git status --short` to confirm the intended year's files changed. Newly created files appear in status and need to be reviewed directly before staging. Record any manual corrections in that year's `General Notes`.
+
+6. Update the root README's coverage and directory list when adding a new year. Run code checks, then include the source URL and validation results in the commit or pull request.
 
 ## Validation
 
@@ -53,20 +73,16 @@ frictionless validate data/2026/rates_normalized.csv --schema schemas/rates_sche
 
 All files must pass validation (correct columns, no malformed data).
 
-## Updating Documentation
-* Add the new year the **root README.md** coverage list
-* Update the CHANGELOG.md with a new entry
-
 ## Pull Request Guidelines
 * Use a clear title (e.g., `Add 2026 rates`)
 * Reference the source VA URL in your PR description
 * Confirm validation passes in CI
-* Ensure your changes follow coding style and linting (Ruff will auto-run via pre-commit)
+* Ensure tests, lint, formatting, and schema validation pass locally and in CI
 
 ### PR Checklist
 - [ ] Data validates with schema
 - [ ] README.md updated (coverage list)
-- [ ] CHANGELOG.md updated
+- [ ] Per-year README reviewed (source, effective date, summary, checksum, and notes)
 - [ ] Tests pass locally
 
 ## Coding Style

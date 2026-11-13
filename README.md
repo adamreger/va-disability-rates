@@ -46,10 +46,12 @@ va-disability-rates/
 │  └─ rates_schema.json
 ├─ scripts/
 │  ├─ scrape_va_rates.py
+│  ├─ parser.py
+│  ├─ normalizer.py
+│  └─ requirements.txt
 ├─ tests/
 │  └─ test_scrape_va_rates.py
 ├─ .github/workflows/validate-data.yml
-├─ CHANGELOG.md
 ├─ CONTRIBUTING.md
 ├─ LICENSE
 └─ README.md
@@ -64,9 +66,9 @@ va-disability-rates/
 | `Category`         | string  | "Basic" or "Added"                                               |
 | `Dependent_Group`  | string  | "No children", "With children", or `null` for added items        |
 | `Dependent_Status` | string  | Dependency description (varies by group)                         |
-| `Has_Spouse`       | boolean | Boolean flag to indicate if the rate incldues a dependent spouse |
+| `Has_Spouse`       | boolean | Boolean flag to indicate if the rate includes a dependent spouse |
 | `Parent_Count`     | int     | Number of dependent parents in the rate (0, 1, or 2)             |
-| `Has_Child`        | boolean | Boolean flag to indicate if the rate incldues a dependent child  |
+| `Has_Child`        | boolean | Boolean flag to indicate if the rate includes a dependent child  |
 | `Added_Item`       | string  | Description of the added amount (if applicable)                  |
 | `Monthly_Rate_USD` | float   | Monthly compensation in U.S. dollars                             |
 
@@ -80,7 +82,7 @@ va-disability-rates/
 ## Getting started
 
 ```bash
-git clone git@github.com:YOUR_USERNAME/va-disability-rates.git
+git clone git@github.com:adamreger/va-disability-rates.git
 cd va-disability-rates
 
 # Create and activate a virtual environment
@@ -93,30 +95,44 @@ python -m pip install -r requirements-dev.txt
 pre-commit install
 ```
 
-### Rebuild normalized dataset:
+### Scrape one year
+
+Run commands from the repository root. Each invocation scrapes one explicit source URL for one rate year. Confirm that the source page covers the year supplied with `--year`.
+
 ```bash
-python ../scripts/scrape_va_rates.py \
-  --url "https://www.va.gov/disability/compensation-rates/veteran-rates" \
+python scripts/scrape_va_rates.py \
+  --url "https://www.va.gov/disability/compensation-rates/veteran-rates/" \
   --year 2026 \
-  --out ../data/2026/rates_normalized.csv \
+  --out data/2026/rates_normalized.csv \
   --debug \
   --write-readme
 ```
 
-### Parameters:
-```python
-"--url", required=True, help="VA.gov disability rates page URL"
-"--year", required=True, type=int, help="Rates year (e.g., 2024)"
-"--out", help="Output CSV path"
-"--output", help="Output CSV path (alias for --out)"
-"--preview", type=int, help="Preview first N rows; no file written"
-"--debug", action="store_true", help="Verbose debug logging"
-"--write-readme", action="store_true", help="Generate a README.md alongside the output CSV. Merges in any previous bullets under "General Notes""
+The scraper installs Chromium through Playwright on first use. The output CSV is replaced if it already exists. Generated READMEs preserve existing bullets under `General Notes`.
+
+To preview the first five rows without writing files:
+
+```bash
+python scripts/scrape_va_rates.py \
+  --url "https://www.va.gov/disability/compensation-rates/veteran-rates/" \
+  --year 2026 \
+  --preview 5
 ```
+
+| Parameter | Purpose |
+| --- | --- |
+| `--url` | Required source page URL |
+| `--year` | Required single integer rate year |
+| `--out`, `--output` | Output CSV path; required unless previewing |
+| `--preview N` | Preview a positive number of rows; writes no CSV or README |
+| `--debug` | Print table extraction and deduplication details |
+| `--write-readme` | Generate a README alongside the CSV; requires an output path |
+
+Invalid arguments and scrape failures exit with a nonzero status.
 
 ## Usage Example
 Load dataset into pandas and query 100% ratings:
-```bash
+```python
 import pandas as pd
 
 df = pd.read_csv("data/2025/rates_normalized.csv")
@@ -135,33 +151,19 @@ Please see the [CONTRIBUTING.md](./CONTRIBUTING.md) for guidelines.
 Releases are tagged (v1.0.0, v1.1.0) and published with attached CSVs/Parquet so consumers can pin to exact versions.
 
 ## Validation & CI
-Every PR is automatically validated against the schema in GitHub CI
 
-**schemas/rates_schema.json**:
-```yaml
-name: Validate data
+Every push and pull request runs tests, Ruff lint and formatting checks, and schema validation for every dataset through [the CI workflow](.github/workflows/validate-data.yml). Tests replace browser I/O and do not contact the VA or download Chromium.
 
-on:
-  push:
-  pull_request:
+Run the same code checks locally:
 
-jobs:
-  validate:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install frictionless
-      - name: Validate data files
-        run: |
-          frictionless validate data/**/rates_normalized.csv --schema schemas/rates_schema.json
+```bash
+python -m pytest
+ruff check scripts tests
+ruff format --check scripts tests
+frictionless validate data/2026/rates_normalized.csv --schema schemas/rates_schema.json
 ```
+
+For the annual data update and review process, see [CONTRIBUTING.md](CONTRIBUTING.md#adding-or-correcting-a-year-of-data).
 
 ## Data Dictionary (per-year README)
 Inside each data/<year>/README.md:
