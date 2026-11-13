@@ -5,12 +5,42 @@ import hashlib
 import re
 import subprocess
 import sys
-from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 import pandas as pd
+from playwright.async_api import Error as PlaywrightError
 from playwright.async_api import async_playwright
+
+# Support both `python scripts/scrape_va_rates.py` and package imports in tests.
+if __package__:
+    from .parser import (
+        JS_FIND_PRECEDING_H3,
+        JS_GET_DISTRIBUTED_TEXT,
+        extract_ratings_from_headers,
+        format_effective_line,
+        looks_like_10_20_table,
+    )
+
+    from .normalizer import (
+        dep_group_from_heading,
+        normalize_rows,
+        parse_rate_to_float,
+    )
+else:
+    from parser import (
+        JS_FIND_PRECEDING_H3,
+        JS_GET_DISTRIBUTED_TEXT,
+        extract_ratings_from_headers,
+        format_effective_line,
+        looks_like_10_20_table,
+    )
+
+    from normalizer import (
+        dep_group_from_heading,
+        normalize_rows,
+        parse_rate_to_float,
+    )
 
 # ---------- Setup helpers ----------
 
@@ -25,11 +55,6 @@ def ensure_playwright_browsers() -> None:
     )
 
 
-def _parse_rate_to_float(s: str) -> float:
-    clean = s.replace("$", "").replace(",", "").replace("\u00a0", " ").strip()
-    return float(clean)
-
-
 async def _extract_effective_text(page: Any, debug: bool = False) -> Optional[str]:
     try:
         locator = page.locator("strong", has_text="Effective")
@@ -41,28 +66,6 @@ async def _extract_effective_text(page: Any, debug: bool = False) -> Optional[st
         return text
     except Exception:
         return None
-
-
-def _format_effective_line(raw_text: Optional[str], rates_year: int) -> str:
-    if not raw_text:
-        return f"Effective date: Unknown (see source) for {rates_year} rates"
-
-    match = re.search(
-        r"Effective\s+([A-Za-z]+)\s+(\d{1,2})(?:,)?\s+(\d{4})",
-        raw_text,
-        flags=re.IGNORECASE,
-    )
-    if not match:
-        return f"{raw_text.strip()} for {rates_year} rates"
-
-    month_name, day_str, year_str = match.groups()
-    try:
-        parsed = datetime.strptime(f"{month_name} {day_str} {year_str}", "%B %d %Y")
-    except ValueError:
-        return f"{raw_text.strip()} for {rates_year} rates"
-
-    month_abbr = parsed.strftime("%b")
-    return f"Effective {month_abbr} {parsed.day}, {parsed.year} for {rates_year} rates"
 
 
 def _extract_existing_general_notes(readme_path: Path) -> List[str]:
@@ -126,7 +129,7 @@ def _write_dataset_readme(
     lines: List[str] = []
     lines.append(f"# VA Disability Compensation Rates – {year}")
     lines.append("")
-    lines.append(f"- {_format_effective_line(effective_text, year)}")
+    lines.append(f"- {format_effective_line(effective_text, year)}")
     lines.append(f"- Source: {url}")
     lines.append("")
     lines.append("## Dataset Summary")
@@ -146,129 +149,6 @@ def _write_dataset_readme(
     print(f"Saved dataset README to {readme_path}")
 
 
-# Grab slotted/distributed text from cells/headers living under <slot> inside shadow DOM
-JS_GET_DISTRIBUTED_TEXT = """
-(cell) => {
-  const getText = (node) => {
-    if (!node) return '';
-    if (node.nodeType === Node.TEXT_NODE) return node.textContent || '';
-    if (node.tagName && node.tagName.toLowerCase() === 'slot') {
-      const assigned = node.assignedNodes({flatten: true});
-      return assigned.map(getText).join(' ');
-    }
-    const slot = node.querySelector && node.querySelector('slot');
-    if (slot) {
-      const assigned = slot.assignedNodes({flatten: true});
-      if (assigned && assigned.length) return assigned.map(getText).join(' ');
-    }
-    return Array.from(node.childNodes || []).map(getText).join(' ');
-  };
-  return getText(cell).replace(/\\s+/g, ' ').trim();
-}
-"""
-
-# Find closest preceding H3 in light DOM for the <va-table> hosting this <table>
-JS_FIND_PRECEDING_H3 = """
-(tableEl) => {
-  const innerHost = tableEl.getRootNode()?.host || null; // <va-table-inner>
-  const vaTable = innerHost ? innerHost.closest('va-table') : null;
-  if (!vaTable) return null;
-
-  let node = vaTable;
-  while (node) {
-    let p = node.previousElementSibling;
-    while (p) {
-      const h3s = p.querySelectorAll ? p.querySelectorAll('h3') : [];
-      if (h3s && h3s.length) {
-        const h3 = h3s[h3s.length - 1];
-        return { id: h3.id || '', text: (h3.textContent || '').trim() };
-      }
-      if (p.tagName && p.tagName.toLowerCase() === 'h3') {
-        return { id: p.id || '', text: (p.textContent || '').trim() };
-      }
-      p = p.previousElementSibling;
-    }
-    node = node.parentElement;
-  }
-  return null;
-}
-"""
-
-
-def _extract_ratings_from_headers(headers: List[str]) -> List[Optional[int]]:
-    ratings: List[Optional[int]] = []
-    for h in headers:
-        m = re.search(r"(\d+)\s*%", h)
-        ratings.append(int(m.group(1)) if m else None)
-    return ratings
-
-
-def _looks_like_10_20_table(headers: List[str], ncols: int) -> bool:
-    # 10–20% table has exactly two columns, and headers are not percentages
-    return ncols == 2 and not any(re.search(r"\d+\\s*%", h) for h in headers)
-
-
-def _normalize_status_text(status: str) -> str:
-    text = re.sub(r"[^a-z0-9\s]", " ", (status or "").lower())
-    return re.sub(r"\s+", " ", text).strip()
-
-
-def _has_negated_term(text: str, term_pattern: str) -> bool:
-    pattern = rf"(?:no|without)\s+(?:[a-z]+\s+){{0,3}}{term_pattern}"
-    return bool(re.search(pattern, text))
-
-
-def _infer_basic_dependents(status: str) -> Dict[str, Any]:
-    normalized = _normalize_status_text(status)
-
-    has_spouse = False
-    if "spouse" in normalized and not _has_negated_term(normalized, r"spouse"):
-        has_spouse = True
-
-    parent_count = 0
-    if "parent" in normalized:
-        if not _has_negated_term(normalized, r"parents?"):
-            if (
-                re.search(r"\b(2|two)\s+(?:dependent\s+)?parents?\b", normalized)
-                or "both parents" in normalized
-            ):
-                parent_count = 2
-            elif re.search(r"\b(1|one)\s+(?:dependent\s+)?parent\b", normalized):
-                parent_count = 1
-            elif "parents" in normalized:
-                parent_count = 2
-            else:
-                parent_count = 1
-
-    has_child = False
-    if re.search(r"\bchild(?:ren)?\b", normalized) and not _has_negated_term(
-        normalized, r"child(?:ren)?"
-    ):
-        if re.search(r"with\s+(?:one|two|three|\d+)?\s*child", normalized):
-            has_child = True
-        elif re.search(r"child\s+only", normalized):
-            has_child = True
-        elif re.search(r"with\s+children", normalized):
-            has_child = True
-        else:
-            has_child = True
-
-    return {
-        "Has_Spouse": has_spouse,
-        "Parent_Count": parent_count,
-        "Has_Child": has_child,
-    }
-
-
-def _dep_group_from_h3_id(h3_id: str) -> Optional[str]:
-    id_lower = (h3_id or "").lower()
-    if id_lower.startswith("with-a-dependent-spouse-or-par"):
-        return "No children"
-    if id_lower.startswith("with-dependents-including-chil"):
-        return "With children"
-    return None
-
-
 def _debug_table_log(
     idx: int,
     caption: str,
@@ -277,7 +157,6 @@ def _debug_table_log(
     body_rows: int,
     section: Optional[Dict[str, Any]],
 ) -> None:
-    # Pretty-print to match your requested format
     cat = category or "UNKNOWN"
     hdrs = ", \n\t\t".join([f"'{h}'" for h in headers])
     section_line = ""
@@ -295,260 +174,222 @@ def _debug_table_log(
     )
 
 
-# ---------- Main scrape ----------
+async def _scrape_rows(
+    page: Any,
+    url: str,
+    year: int,
+    debug: bool,
+) -> tuple[List[Dict[str, Any]], Optional[str]]:
+    print(f"Processing year {year} from {url}...")
+
+    if debug:
+        print(f"[DEBUG] Navigating to: {url}")
+
+    await page.goto(url, wait_until="networkidle")
+
+    effective_text = await _extract_effective_text(page, debug)
+
+    # Expand accordions
+    buttons = await page.query_selector_all(
+        'va-accordion button[data-testid="expand-all-accordions"]'
+    )
+    for b in buttons:
+        try:
+            await b.click()
+        except Exception:
+            pass
+
+    # Collect tables
+    await page.wait_for_selector("va-table-inner.hydrated", timeout=15000)
+    inners = await page.query_selector_all("va-table-inner.hydrated")
+    tables = []
+    for inner in inners:
+        handle = await inner.evaluate_handle(
+            'el => el.shadowRoot ? el.shadowRoot.querySelector("table") : null'
+        )
+        table_el = handle.as_element() if handle else None
+        if table_el:
+            tables.append(table_el)
+
+    rows_out = []
+
+    for idx, t in enumerate(tables, start=1):
+        caption_el = await t.query_selector("caption")
+        caption_text = (
+            await caption_el.evaluate(JS_GET_DISTRIBUTED_TEXT) if caption_el else ""
+        )
+        category = (
+            "Basic"
+            if "Basic" in caption_text
+            else ("Added" if "Added" in caption_text else None)
+        )
+
+        header_els = await t.query_selector_all("thead tr th")
+        headers = [await h.evaluate(JS_GET_DISTRIBUTED_TEXT) for h in header_els]
+        headers = [h.strip() for h in headers]
+        ratings_from_headers = extract_ratings_from_headers(headers)
+
+        section_meta = await t.evaluate(JS_FIND_PRECEDING_H3)
+        dep_group_override = (
+            dep_group_from_heading(
+                section_meta.get("id", ""), section_meta.get("text", "")
+            )
+            if section_meta
+            else None
+        )
+
+        body_rows = await t.query_selector_all("tbody tr")
+
+        if debug:
+            _debug_table_log(
+                idx,
+                caption_text or "",
+                category,
+                headers,
+                len(body_rows),
+                section_meta,
+            )
+
+        if category is None:
+            if looks_like_10_20_table(
+                headers, len(headers)
+            ) or "Dependent status" in " ".join(headers):
+                category = "Basic"
+            else:
+                category = "Added" if any("Added" in h for h in headers) else "Basic"
+
+        # 10-20% table special case
+        if looks_like_10_20_table(headers, len(headers)):
+            for br in body_rows:
+                cells = await br.query_selector_all("th, td")
+                values = [await c.evaluate(JS_GET_DISTRIBUTED_TEXT) for c in cells]
+                if len(values) < 2:
+                    continue
+                m = re.search(r"(\d+)\s*%", values[0])
+                if not m:
+                    continue
+                rating = int(m.group(1))
+                try:
+                    rate = parse_rate_to_float(values[1])
+                except ValueError:
+                    continue
+                rows_out.append(
+                    {
+                        "Year": year,
+                        "Rating": rating,
+                        "Dependent_Group": dep_group_override or "All",
+                        "Dependent_Status": "All",
+                        "Category": "Basic",
+                        "Added_Item": None,
+                        "Monthly_Rate_USD": rate,
+                    }
+                )
+            continue
+
+        # Standard table
+        for br in body_rows:
+            cells = await br.query_selector_all("th, td")
+            values = [await c.evaluate(JS_GET_DISTRIBUTED_TEXT) for c in cells]
+            if not values:
+                continue
+
+            dependent_status_raw = values[0].strip()
+            added_item = None
+
+            if category == "Added":
+                added_item = dependent_status_raw
+                dependent_group = ""
+                dependent_status = ""
+            else:
+                dependent_status = dependent_status_raw
+                if dep_group_override:
+                    dependent_group = dep_group_override
+                else:
+                    lower = dependent_status.lower()
+                    if "child" in lower:
+                        dependent_group = "With children"
+                    elif "spouse" in lower or "parent" in lower:
+                        dependent_group = "No children"
+                    else:
+                        dependent_group = "All"
+
+            for col_idx, val in enumerate(values[1:], start=1):
+                if not val:
+                    continue
+                rating = (
+                    ratings_from_headers[col_idx]
+                    if col_idx < len(ratings_from_headers)
+                    else None
+                )
+                if rating is None and col_idx < len(headers):
+                    m = re.search(r"(\d+)\s*%", headers[col_idx])
+                    if m:
+                        rating = int(m.group(1))
+                if rating is None:
+                    continue
+                try:
+                    rate = parse_rate_to_float(val)
+                except ValueError:
+                    continue
+
+                rows_out.append(
+                    {
+                        "Year": year,
+                        "Rating": rating,
+                        "Dependent_Group": dependent_group,
+                        "Dependent_Status": dependent_status,
+                        "Category": category,
+                        "Added_Item": added_item,
+                        "Monthly_Rate_USD": rate,
+                    }
+                )
+
+    return rows_out, effective_text
 
 
 async def scrape(
     url: str,
     year: int,
-    output_file: Optional[str],
+    output_file: Optional[Path],
     preview: Optional[int] = None,
     debug: bool = False,
     write_readme: bool = False,
 ) -> None:
+    """Scrape one source page for one rate year."""
     ensure_playwright_browsers()
-
-    effective_text: Optional[str] = None
 
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=True)
-        page = await browser.new_page()
-
-        if debug:
-            print(f"[DEBUG] Navigating to: {url}")
-
-        await page.goto(url, wait_until="networkidle")
-
-        effective_text = await _extract_effective_text(page, debug)
-
-        # Expand all accordions
-        buttons = await page.query_selector_all(
-            'va-accordion button[data-testid="expand-all-accordions"]'
-        )
-        clicked = 0
-        for b in buttons:
-            try:
-                await b.click()
-                clicked += 1
-            except Exception:
-                pass
-        if debug:
-            print(f"[DEBUG] Clicked 'Expand all' on {clicked} accordion(s)")
-
-        # Collect tables by piercing shadow roots
-        await page.wait_for_selector("va-table-inner.hydrated", timeout=15000)
-        inners = await page.query_selector_all("va-table-inner.hydrated")
-        tables = []
-        for inner in inners:
-            handle = await inner.evaluate_handle(
-                'el => el.shadowRoot ? el.shadowRoot.querySelector("table") : null'
-            )
-            table_el = handle.as_element() if handle else None
-            if table_el:
-                tables.append(table_el)
-
-        if debug:
-            print(
-                f"[DEBUG] Found {len(tables)} table(s) inside va-table-inner (shadow DOM)"
-            )
-
-        rows_out = []
-
-        for idx, t in enumerate(tables, start=1):
-            # Caption → category detection
-            caption_el = await t.query_selector("caption")
-            caption_text = (
-                await caption_el.evaluate(JS_GET_DISTRIBUTED_TEXT) if caption_el else ""
-            )
-            category = (
-                "Basic"
-                if "Basic" in caption_text
-                else ("Added" if "Added" in caption_text else None)
-            )
-
-            # Headers via slotted text
-            header_els = await t.query_selector_all("thead tr th")
-            headers = [await h.evaluate(JS_GET_DISTRIBUTED_TEXT) for h in header_els]
-            headers = [h.strip() for h in headers]
-            ratings_from_headers = _extract_ratings_from_headers(headers)
-
-            # Section H3 used to override dependent group for Basic tables
-            section_meta = await t.evaluate(JS_FIND_PRECEDING_H3)
-            dep_group_override = (
-                _dep_group_from_h3_id(section_meta["id"]) if section_meta else None
-            )
-
-            # Body rows
-            body_rows = await t.query_selector_all("tbody tr")
-
-            if debug:
-                _debug_table_log(
-                    idx,
-                    caption_text or "",
-                    category,
-                    headers,
-                    len(body_rows),
-                    section_meta,
-                )
-
-            # Fallback category detection if caption missing
-            if category is None:
-                if _looks_like_10_20_table(
-                    headers, len(headers)
-                ) or "Dependent status" in " ".join(headers):
-                    category = "Basic"
-                else:
-                    category = (
-                        "Added" if any("Added" in h for h in headers) else "Basic"
-                    )
-
-            # Special case: 10–20% table (ratings are first-column values)
-            if _looks_like_10_20_table(headers, len(headers)):
-                for br in body_rows:
-                    cells = await br.query_selector_all("th, td")
-                    values = [await c.evaluate(JS_GET_DISTRIBUTED_TEXT) for c in cells]
-                    if len(values) < 2:
-                        continue
-                    m = re.search(r"(\d+)\s*%", values[0])
-                    if not m:
-                        continue
-                    rating = int(m.group(1))
-                    try:
-                        rate = _parse_rate_to_float(values[1])
-                    except ValueError:
-                        continue
-                    rows_out.append(
-                        {
-                            "Year": year,
-                            "Rating": rating,
-                            "Dependent_Group": dep_group_override or "All",
-                            "Dependent_Status": "All",
-                            "Category": "Basic",
-                            "Added_Item": None,
-                            "Monthly_Rate_USD": rate,
-                        }
-                    )
-                continue
-
-            # General case: headers[1..] are ratings columns
-            for br in body_rows:
-                cells = await br.query_selector_all("th, td")
-                values = [await c.evaluate(JS_GET_DISTRIBUTED_TEXT) for c in cells]
-                if not values:
-                    continue
-
-                dependent_status_raw = values[0].strip()
-                added_item = None
-
-                if category == "Added":
-                    # Your rule: empty Dependent_Group and Dependent_Status; use label as Added_Item
-                    added_item = dependent_status_raw
-                    dependent_group = ""
-                    dependent_status = ""
-                else:
-                    # Basic tables: infer/override dependent group
-                    dependent_status = dependent_status_raw
-                    if dep_group_override:
-                        dependent_group = dep_group_override
-                    else:
-                        lower = dependent_status.lower()
-                        if "child" in lower:
-                            dependent_group = "With children"
-                        elif "spouse" in lower or "parent" in lower:
-                            dependent_group = "No children"
-                        else:
-                            dependent_group = "All"
-
-                for col_idx, val in enumerate(values[1:], start=1):
-                    if not val:
-                        continue
-                    rating = (
-                        ratings_from_headers[col_idx]
-                        if col_idx < len(ratings_from_headers)
-                        else None
-                    )
-                    if rating is None and col_idx < len(headers):
-                        m = re.search(r"(\d+)\s*%", headers[col_idx])
-                        if m:
-                            rating = int(m.group(1))
-                    if rating is None:
-                        continue
-                    try:
-                        rate = _parse_rate_to_float(val)
-                    except ValueError:
-                        continue
-
-                    rows_out.append(
-                        {
-                            "Year": year,
-                            "Rating": rating,
-                            "Dependent_Group": dependent_group,
-                            "Dependent_Status": dependent_status,
-                            "Category": category,
-                            "Added_Item": added_item,
-                            "Monthly_Rate_USD": rate,
-                        }
-                    )
-
-        await browser.close()
+        try:
+            page = await browser.new_page()
+            rows_out, effective_text = await _scrape_rows(page, url, year, debug)
+        finally:
+            await browser.close()
 
     if not rows_out:
-        raise SystemExit("No rows were scraped.")
+        raise RuntimeError(f"No rows were scraped for {year} from {url}.")
 
-    # Build DataFrame and de-duplicate on the full identity
-    df = pd.DataFrame(rows_out)
-    before = len(df)
-    df = df.drop_duplicates(
-        subset=[
-            "Year",
-            "Rating",
-            "Dependent_Group",
-            "Dependent_Status",
-            "Category",
-            "Added_Item",
-            "Monthly_Rate_USD",
-        ],
-        keep="first",
-    ).reset_index(drop=True)
-    after = len(df)
-
-    df["Has_Spouse"] = pd.NA
-    df["Parent_Count"] = pd.NA
-    df["Has_Child"] = pd.NA
-
-    basic_mask = df["Category"] == "Basic"
-    if basic_mask.any():
-        inferred = df.loc[basic_mask, "Dependent_Status"].apply(_infer_basic_dependents)
-        inferred_df = pd.DataFrame(list(inferred), index=df.index[basic_mask])
-        df.loc[basic_mask, ["Has_Spouse", "Parent_Count", "Has_Child"]] = inferred_df
-
-    df["Has_Spouse"] = df["Has_Spouse"].astype("boolean")
-    df["Has_Child"] = df["Has_Child"].astype("boolean")
-    df["Parent_Count"] = df["Parent_Count"].astype("Int64")
-
-    # Print dedup summary and final count in debug mode
+    df, duplicates_removed = normalize_rows(rows_out)
     if debug:
-        removed = before - after
-        print(f"[DEBUG] Deduplication removed {removed} duplicate rows")
-        print(f"[DEBUG] Final row count after dedup: {after}")
+        print(f"[DEBUG] Deduplication removed {duplicates_removed} duplicate rows")
+        print(f"[DEBUG] Final row count after dedup: {len(df)}")
 
-    duplicates_removed = before - after
-
-    if preview:
+    if preview is not None:
         print(df.head(preview).to_string(index=False))
-        print("[INFO] Preview mode: skipped writing CSV.")
-        if write_readme:
-            print("[INFO] README generation skipped in preview mode.")
+        print("[INFO] Preview mode: skipped writing CSV and README.")
     else:
         if not output_file:
-            raise SystemExit("Error: provide --out/--output or run with --preview.")
+            raise ValueError("Provide --out/--output or run with --preview.")
+
+        # Ensure parent directory exists
+        output_file.parent.mkdir(parents=True, exist_ok=True)
+
         df.to_csv(output_file, index=False)
         print(f"Saved {len(df)} rows to {output_file}")
 
         if write_readme:
-            output_path = Path(output_file)
             _write_dataset_readme(
-                output_path,
+                output_file,
                 df,
                 url,
                 year,
@@ -559,16 +400,21 @@ async def scrape(
 
 # ---------- CLI ----------
 
-if __name__ == "__main__":
+
+def main(argv: Optional[List[str]] = None) -> int:
     parser = argparse.ArgumentParser(
-        description="Scrape VA disability rates (single year) into CSV."
+        description="Scrape one year of VA disability rates into CSV."
     )
     parser.add_argument("--url", required=True, help="VA.gov disability rates page URL")
     parser.add_argument(
-        "--year", required=True, type=int, help="Rates year (e.g., 2024)"
+        "--year",
+        required=True,
+        type=int,
+        help="Single rate year (e.g., 2026)",
     )
-    parser.add_argument("--out", help="Output CSV path")
-    parser.add_argument("--output", help="Output CSV path (alias for --out)")
+    parser.add_argument(
+        "--out", "--output", dest="output_file", type=Path, help="Output CSV path"
+    )
     parser.add_argument(
         "--preview", type=int, help="Preview first N rows; no file written"
     )
@@ -578,19 +424,37 @@ if __name__ == "__main__":
         action="store_true",
         help="Generate a README.md alongside the output CSV",
     )
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
-    out_path = args.out or args.output
-    if args.write_readme and not out_path:
+    if args.preview is not None and args.preview < 1:
+        parser.error("--preview must be a positive integer")
+    if args.write_readme and not args.output_file:
         parser.error("--write-readme requires --out/--output")
+    if not args.output_file and args.preview is None:
+        parser.error("provide --out/--output or run with --preview")
 
-    asyncio.run(
-        scrape(
-            args.url,
-            args.year,
-            out_path,
-            args.preview,
-            args.debug,
-            args.write_readme,
+    try:
+        asyncio.run(
+            scrape(
+                args.url,
+                args.year,
+                args.output_file,
+                args.preview,
+                args.debug,
+                args.write_readme,
+            )
         )
-    )
+    except (
+        OSError,
+        RuntimeError,
+        ValueError,
+        subprocess.CalledProcessError,
+        PlaywrightError,
+    ) as exc:
+        print(f"Error: {exc}", file=sys.stderr)
+        return 1
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
